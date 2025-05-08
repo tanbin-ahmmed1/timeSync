@@ -6,450 +6,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TimeSync - Medical Appointment Management System</title>
-    <link rel="icon" href="TimeSync.png" type="image/x-icon">
-    <style>
-        :root {
-            --primary: #2c6cff;
-            --secondary: #53d8fb;
-            --accent: #47b8e0;
-            --light: #f5f7fa;
-            --dark: #343a40;
-            --success: #28a745;
-            --danger: #dc3545;
-            --warning: #ffc107;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background-color: var(--light);
-            color: var(--dark);
-            line-height: 1.6;
-        }
-        
-        .container {
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 15px;
-        }
-        
-        header {
-            background-color: white;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 1000;
-        }
-        
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 0;
-        }
-        
-        .logo {
-            display: flex;
-            align-items: center;
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--primary);
-        }
-        
-        .logo i {
-            margin-right: 10px;
-            color: var(--primary);
-        }
-        
-        nav ul {
-            display: flex;
-            list-style: none;
-        }
-        
-        nav ul li {
-            margin-left: 25px;
-        }
-        
-        nav ul li a {
-            text-decoration: none;
-            color: var(--dark);
-            font-weight: 500;
-            transition: color 0.3s;
-        }
-        
-        nav ul li a:hover {
-            color: var(--primary);
-        }
-        
-        .btn {
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: var(--primary);
-            color: white;
-            border-radius: 5px;
-            text-decoration: none;
-            font-weight: 500;
-            transition: background-color 0.3s;
-        }
-        
-        .btn:hover {
-            background-color: #194cb1;
-        }
-        
-        .hero {
-            height: 100vh;
-            background: linear-gradient(rgba(44, 108, 255, 0.1), rgba(44, 108, 255, 0.05)), url('/api/placeholder/1400/800') center/cover;
-            display: flex;
-            align-items: center;
-            text-align: center;
-            margin-top: 70px;
-        }
-        
-        .hero-content {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        
-        .hero h1 {
-            font-size: 48px;
-            color: var(--dark);
-            margin-bottom: 20px;
-        }
-        
-        .hero p {
-            font-size: 18px;
-            color: var(--dark);
-            margin-bottom: 30px;
-        }
-        
-        .hero-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-        }
-        
-        .btn-secondary {
-            background-color: transparent;
-            border: 2px solid var(--primary);
-            color: var(--primary);
-        }
-        
-        .btn-secondary:hover {
-            background-color: var(--primary);
-            color: white;
-        }
-        
-        .features {
-            padding: 80px 0;
-            background-color: white;
-        }
-        
-        .section-header {
-            text-align: center;
-            margin-bottom: 50px;
-        }
-        
-        .section-header h2 {
-            font-size: 36px;
-            color: var(--dark);
-            margin-bottom: 15px;
-        }
-        
-        .section-header p {
-            font-size: 18px;
-            color: #6c757d;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-        }
-        
-        .feature-card {
-            background-color: #f8f9fa;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-            transition: transform 0.3s;
-        }
-        
-        .feature-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .feature-card i {
-            font-size: 40px;
-            color: var(--primary);
-            margin-bottom: 20px;
-        }
-        
-        .feature-card h3 {
-            font-size: 22px;
-            margin-bottom: 15px;
-            color: var(--dark);
-        }
-        
-        .feature-card p {
-            color: #6c757d;
-        }
-        
-        .how-it-works {
-            padding: 80px 0;
-            background-color: #f8f9fa;
-        }
-        
-        .steps {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 50px;
-            flex-wrap: wrap;
-        }
-        
-        .step {
-            flex: 1;
-            min-width: 250px;
-            text-align: center;
-            padding: 0 20px;
-            margin-bottom: 30px;
-        }
-        
-        .step-number {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 60px;
-            height: 60px;
-            background-color: var(--primary);
-            color: white;
-            border-radius: 50%;
-            font-size: 24px;
-            font-weight: 700;
-            margin: 0 auto 20px auto;
-        }
-        
-        .step h3 {
-            font-size: 22px;
-            margin-bottom: 15px;
-            color: var(--dark);
-        }
-        
-        .step p {
-            color: #6c757d;
-        }
-        
-        .cta {
-            padding: 80px 0;
-            background-color: var(--primary);
-            color: white;
-            text-align: center;
-        }
-        
-        .cta h2 {
-            font-size: 36px;
-            margin-bottom: 20px;
-        }
-        
-        .cta p {
-            font-size: 18px;
-            margin-bottom: 30px;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        
-        .cta .btn {
-            background-color: white;
-            color: var(--primary);
-            font-size: 18px;
-            padding: 12px 30px;
-        }
-        
-        .cta .btn:hover {
-            background-color: #e6e6e6;
-        }
-        
-        footer {
-            background-color: var(--dark);
-            color: white;
-            padding: 50px 0 20px;
-        }
-        
-        .footer-content {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 30px;
-            margin-bottom: 40px;
-        }
-        
-        .footer-column h3 {
-            font-size: 20px;
-            margin-bottom: 20px;
-            color: white;
-        }
-        
-        .footer-column ul {
-            list-style: none;
-        }
-        
-        .footer-column ul li {
-            margin-bottom: 10px;
-        }
-        
-        .footer-column ul li a {
-            color: #adb5bd;
-            text-decoration: none;
-            transition: color 0.3s;
-        }
-        
-        .footer-column ul li a:hover {
-            color: white;
-        }
-        
-        .footer-bottom {
-            text-align: center;
-            padding-top: 20px;
-            border-top: 1px solid #495057;
-        }
-        
-        .footer-bottom p {
-            color: #adb5bd;
-        }
-        
-        /* Login Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1050;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0, 0, 0, 0.5);
-        }
-        
-        .modal-content {
-            background-color: white;
-            margin: 10% auto;
-            padding: 30px;
-            border-radius: 10px;
-            max-width: 400px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            position: relative;
-        }
-        
-        .close {
-            position: absolute;
-            top: 15px;
-            right: 20px;
-            font-size: 24px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        
-        .login-form h2 {
-            text-align: center;
-            margin-bottom: 20px;
-            color: var(--dark);
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: var(--dark);
-        }
-        
-        .form-group input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ced4da;
-            border-radius: 5px;
-            font-size: 16px;
-        }
-        
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(44, 108, 255, 0.2);
-        }
-        
-        .login-btn {
-            width: 100%;
-            padding: 12px;
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        
-        .login-btn:hover {
-            background-color: #194cb1;
-        }
-        
-        .form-footer {
-            text-align: center;
-            margin-top: 20px;
-        }
-        
-        .form-footer a {
-            color: var(--primary);
-            text-decoration: none;
-        }
-        
-        .form-footer a:hover {
-            text-decoration: underline;
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 36px;
-            }
-            
-            .hero p {
-                font-size: 16px;
-            }
-            
-            .section-header h2 {
-                font-size: 30px;
-            }
-            
-            .nav-links {
-                display: none;
-            }
-            
-            .mobile-menu {
-                display: block;
-            }
-            
-            .hero-buttons {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .btn {
-                margin-bottom: 10px;
-            }
-        }
-    </style>
+    <link rel="icon" href="TimeSync.png" type="image/png">
+    <link rel="stylesheet" href="styles.css">
+
     <script>
         // Add FontAwesome CDN
         document.write('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">');
@@ -462,28 +21,137 @@
     
     // Check if user is already logged in
     $isLoggedIn = isset($_SESSION['user_id']);
+
+    //DATABASE CONNECTION
+    $host = 'localhost';
+
+    // Database connection details
+$host = "localhost";
+$dbname = "time_sync";
+$username = "root"; 
+$password = ""; 
+
+// Connect to database
+try {
+    $conn = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch(PDOException $e) {
+    die("Connection failed: " . $e->getMessage());
+}
+
+// Initialize variables
+$error = "";
+$username = "";
+$userType = ""; // To store which type of user is logging in
+
+    // Create necessary tables if they don't exist
+try {
+    // Admin users table
+    $conn->exec("CREATE TABLE IF NOT EXISTS admin_users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(50) NOT NULL UNIQUE,
+        password VARCHAR(255) NOT NULL,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(100) NOT NULL UNIQUE,
+        phone VARCHAR(15),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
     
-    // Process login form if submitted
-    if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['email']) && isset($_POST['password'])) {
-        // In a real application, you would validate credentials against a database
-        // This is just a simple example
-        $email = $_POST['email'];
-        $password = $_POST['password'];
+    // Doctor users table
+    $conn->exec("CREATE TABLE IF NOT EXISTS doctor_users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(50) NOT NULL UNIQUE,
+        password VARCHAR(255) NOT NULL,
+        name VARCHAR(100) NOT NULL,
+        department VARCHAR(100),
+        email VARCHAR(100) NOT NULL UNIQUE,
+        phone VARCHAR(15),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+        //patient users table
+    $conn->exec("CREATE TABLE IF NOT EXISTS patient_users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(50) NOT NULL UNIQUE,
+        password VARCHAR(255) NOT NULL,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(100) NOT NULL UNIQUE,
+        phone VARCHAR(15),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+    
+
+    
+} catch(PDOException $e) {
+    die("Database setup error: " . $e->getMessage());
+}
+
+ // Validate input
+ if (empty($username) || empty($password)) {
+    $error = "Please enter both username and password";
+} else {
+    // Authenticate based on user type
+    try {
+        $table = "";
+        $redirectPage = "";
         
-        // Mock authentication (replace with actual database authentication)
-        if ($email === "demo@timesync.com" && $password === "password") {
-            // Set session variables
-            $_SESSION['user_id'] = 1;
-            $_SESSION['user_name'] = "Demo User";
-            $_SESSION['user_type'] = "patient";
-            
-            // Redirect to dashboard or reload page
-            header("Location: ".$_SERVER['PHP_SELF']);
-            exit();
-        } else {
-            $loginError = "Invalid email or password. Please try again.";
+        switch ($userType) {
+            case "admin":
+                $table = "admin_users";
+                $redirectPage = "admin_dashboard.php";
+                $sessionPrefix = "admin";
+                break;
+            case "staff":
+                $table = "doctor_users";
+                $redirectPage = "doctor_dashboard.php";
+                $sessionPrefix = "doctor";
+                break;
+
+            case "patient":
+                $table = "patient_users";
+                $redirectPage = "patient_dashboard.php";
+                $sessionPrefix = "patient";
+                break;
+
+            default:
+                $error = "Invalid user type";
+                break;
         }
+        
+        if (!empty($table)) {
+            // Check user credentials
+            $stmt = $conn->prepare("SELECT email, id, username, password, name FROM $table WHERE username = :username OR email = :username");
+            $stmt->bindParam(':username', $username);
+            $stmt->execute();
+
+            if ($stmt->rowCount() > 0) {
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
+                if (password_verify($password, $user["password"])) {
+                    // Authentication successful - create session
+                    $_SESSION[$sessionPrefix . "_logged_in"] = true;
+                    $_SESSION[$sessionPrefix . "_id"] = $user["id"];
+                    $_SESSION[$sessionPrefix . "_username"] = $user["username"];
+                    $_SESSION[$sessionPrefix . "_name"] = $user["name"];
+                    $_SESSION["user_type"] = $userType; // Store user type in session
+                    
+                    // Redirect to appropriate dashboard
+                    header("Location: $redirectPage");
+                    exit();
+                } else {
+                    $error = "Invalid username or password";
+                }
+            } else {
+                $error = "Invalid username or password";
+            }
+        }
+    } catch(PDOException $e) {
+        $error = "Database error: " . $e->getMessage();
     }
+}                                                                               
+
+    
+      
+            
+    
     
     // Handle logout
     if (isset($_GET['logout'])) {
