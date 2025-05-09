@@ -15,21 +15,18 @@
     </script>
 </head>
 <body>
-    <?php
-    // Start session
-    session_start();
-    
-    // Check if user is already logged in
-    $isLoggedIn = isset($_SESSION['user_id']);
+<?php
+// Start session
+session_start();
 
-    //DATABASE CONNECTION
-    $host = 'localhost';
-
-    // Database connection details
+// DATABASE CONNECTION
 $host = "localhost";
 $dbname = "time_sync";
 $username = "root"; 
 $password = ""; 
+
+// Initialize variables
+$error = "";
 
 // Connect to database
 try {
@@ -39,130 +36,86 @@ try {
     die("Connection failed: " . $e->getMessage());
 }
 
-// Initialize variables
-$error = "";
-$username = "";
-$userType = ""; // To store which type of user is logging in
+// Check if user is already logged in
+$isLoggedIn = isset($_SESSION['user_id']);
 
-    // Create necessary tables if they don't exist
-try {
-    // Admin users table
-    $conn->exec("CREATE TABLE IF NOT EXISTS admin_users (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        username VARCHAR(50) NOT NULL UNIQUE,
-        password VARCHAR(255) NOT NULL,
-        name VARCHAR(100) NOT NULL,
-        email VARCHAR(100) NOT NULL UNIQUE,
-        phone VARCHAR(15),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )");
+// Process login form
+if (isset($_POST['login'])) {
+    // Get and sanitize form data
+    $username = trim($_POST['username']);
+    $password = $_POST['password'];
+    $userType = $_POST['userType'];
     
-    // Doctor users table
-    $conn->exec("CREATE TABLE IF NOT EXISTS doctor_users (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        username VARCHAR(50) NOT NULL UNIQUE,
-        password VARCHAR(255) NOT NULL,
-        name VARCHAR(100) NOT NULL,
-        department VARCHAR(100),
-        email VARCHAR(100) NOT NULL UNIQUE,
-        phone VARCHAR(15),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )");
-        //patient users table
-    $conn->exec("CREATE TABLE IF NOT EXISTS patient_users (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        username VARCHAR(50) NOT NULL UNIQUE,
-        password VARCHAR(255) NOT NULL,
-        name VARCHAR(100) NOT NULL,
-        email VARCHAR(100) NOT NULL UNIQUE,
-        phone VARCHAR(15),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )");
-    
+    // Validate input
+    if (empty($username) || empty($password) || empty($userType)) {
+        $error = "Please complete all fields";
+    } else {
+        // Authenticate based on user type
+        try {
+            $table = "";
+            $redirectPage = "";
+            
+            switch ($userType) {
+                case "admin":
+                    $table = "admin_users";
+                    $redirectPage = "admin_dashboard.php";
+                    break;
+                case "staff":
+                    $table = "doctor_users";
+                    $redirectPage = "doctor_dashboard.php";
+                    break;
+                case "patient":
+                    $table = "patient_users";
+                    $redirectPage = "patient_dashboard.php";
+                    break;
+                default:
+                    $error = "Invalid user type";
+                    break;
+            }
+            
+            if (!empty($table)) {
+                // Check user credentials
+                $stmt = $conn->prepare("SELECT id, username, password, name, email FROM $table WHERE username = :username OR email = :email");
+                $stmt->bindParam(':username', $username);
+                $stmt->bindParam(':email', $username);
+                $stmt->execute();
 
-    
-} catch(PDOException $e) {
-    die("Database setup error: " . $e->getMessage());
-}
-
- // Validate input
- if (empty($username) || empty($password)) {
-    $error = "Please enter both username and password";
-} else {
-    // Authenticate based on user type
-    try {
-        $table = "";
-        $redirectPage = "";
-        
-        switch ($userType) {
-            case "admin":
-                $table = "admin_users";
-                $redirectPage = "admin_dashboard.php";
-                $sessionPrefix = "admin";
-                break;
-            case "staff":
-                $table = "doctor_users";
-                $redirectPage = "doctor_dashboard.php";
-                $sessionPrefix = "doctor";
-                break;
-
-            case "patient":
-                $table = "patient_users";
-                $redirectPage = "patient_dashboard.php";
-                $sessionPrefix = "patient";
-                break;
-
-            default:
-                $error = "Invalid user type";
-                break;
-        }
-        
-        if (!empty($table)) {
-            // Check user credentials
-            $stmt = $conn->prepare("SELECT email, id, username, password, name FROM $table WHERE username = :username OR email = :username");
-            $stmt->bindParam(':username', $username);
-            $stmt->execute();
-
-            if ($stmt->rowCount() > 0) {
-                $user = $stmt->fetch(PDO::FETCH_ASSOC);
-                if (password_verify($password, $user["password"])) {
-                    // Authentication successful - create session
-                    $_SESSION[$sessionPrefix . "_logged_in"] = true;
-                    $_SESSION[$sessionPrefix . "_id"] = $user["id"];
-                    $_SESSION[$sessionPrefix . "_username"] = $user["username"];
-                    $_SESSION[$sessionPrefix . "_name"] = $user["name"];
-                    $_SESSION["user_type"] = $userType; // Store user type in session
-                    
-                    // Redirect to appropriate dashboard
-                    header("Location: $redirectPage");
-                    exit();
+                if ($stmt->rowCount() > 0) {
+                    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+                    if (password_verify($password, $user["password"])) {
+                        // Authentication successful - create session
+                        $_SESSION['user_id'] = $user["id"];
+                        $_SESSION['username'] = $user["username"];
+                        $_SESSION['name'] = $user["name"];
+                        $_SESSION['email'] = $user["email"];
+                        $_SESSION['user_type'] = $userType;
+                        
+                        // Redirect to appropriate dashboard
+                        header("Location: $redirectPage");
+                        exit();
+                    } else {
+                        $error = "Invalid username or password";
+                    }
                 } else {
                     $error = "Invalid username or password";
                 }
-            } else {
-                $error = "Invalid username or password";
             }
+        } catch(PDOException $e) {
+            $error = "Database error: " . $e->getMessage();
         }
-    } catch(PDOException $e) {
-        $error = "Database error: " . $e->getMessage();
     }
-}                                                                               
+}
 
+// Handle logout
+if (isset($_GET['logout'])) {
+    // Destroy session
+    session_destroy();
     
-      
-            
-    
-    
-    // Handle logout
-    if (isset($_GET['logout'])) {
-        // Destroy session
-        session_destroy();
-        
-        // Redirect to home page
-        header("Location: ".$_SERVER['PHP_SELF']);
-        exit();
-    }
-    ?>
+    // Redirect to home page
+    header("Location: ".$_SERVER['PHP_SELF']);
+    exit();
+}
+?>
 
     <header>
         <div class="container">
@@ -336,35 +289,43 @@ try {
         </div>
     </footer>
 
-    <!-- Login Modal -->
-    <div id="loginModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <form class="login-form" method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
-                <h2>Login to TimeSync</h2>
-                <?php if (isset($loginError)): ?>
-                    <div style="color: var(--danger); margin-bottom: 15px; text-align: center;">
-                        <?php echo $loginError; ?>
-                    </div>
-                <?php endif; ?>
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" required>
+   <!-- Login Modal -->
+<div id="loginModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <form class="login-form" method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
+            <h2>Login to TimeSync</h2>
+            <?php if (!empty($error)): ?>
+                <div class="error-message">
+                    <?php echo $error; ?>
                 </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required>
-                </div>
-                <button type="submit" class="login-btn">Login</button>
-                <div class="form-footer">
-                    <p>Don't have an account? <a href="#" id="registerLink">Register</a></p>
-                    <p><a href="#" id="forgotPasswordLink">Forgot Password?</a></p>
-                </div>
-            </form>
-        </div>
+            <?php endif; ?>
+            <div class="form-group">
+                <label for="userType">I am a:</label>
+                <select id="userType" name="userType" required>
+                    <option value="">-- Select User Type --</option>
+                    <option value="admin">Administrator</option>
+                    <option value="staff">Doctor/Staff</option>
+                    <option value="patient">Patient</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="username">Username or Email</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit" name="login" class="login-btn">Login</button>
+            <div class="form-footer">
+                <p>Don't have an account? <a href="#" id="registerLink">Register</a></p>
+                <p><a href="#" id="forgotPasswordLink">Forgot Password?</a></p>
+            </div>
+        </form>
     </div>
-
-    <script>
+</div>
+<script>
         // Modal functionality
         const modal = document.getElementById("loginModal");
         const loginBtn = document.getElementById("loginBtn");
