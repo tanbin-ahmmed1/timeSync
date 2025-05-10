@@ -1,6 +1,6 @@
         /* CSS Reset */
         :root {
-            --primary: #2c6cff;
+            --primary: navy;
             --secondary: #53d8fb;
             --accent: #47b8e0;
             --light: #f5f7fa;
@@ -53,11 +53,13 @@
             font-weight: 700;
             color: var(--primary);
         }
-        
-        .logo i {
-            margin-right: 10px;
-            color: var(--primary);
+        .logo img {
+            width: 20%;
+            height: auto;
+            margin-right: 1px;
         }
+        
+       
         
         nav ul {
             display: flex;
@@ -65,10 +67,16 @@
         }
         
         nav ul li {
-            margin-left: 25px;
+            margin: 10px;
         }
         
         nav ul li a {
+            margin-top: auto;
+            margin-bottom: auto;
+            padding: 10px 15px;
+            border-radius: 5px;
+            text-align: center;
+            display: block;
             text-decoration: none;
             color: var(--dark);
             font-weight: 500;
@@ -78,6 +86,37 @@
         nav ul li a:hover {
             color: var(--primary);
         }
+
+        /* Dropdown specific styles */
+.dropdown-content {
+    display: none; /* Initially hide the dropdown content */
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1; /* Ensure it appears above other elements */
+    left: 1; /* Adjust as needed for alignment */
+}
+
+.dropdown-content a {
+    color: black;
+    
+    text-decoration: none;
+    display: block;
+}
+
+.dropdown-content a:hover {
+    background-color: #ddd;
+}
+
+.dropdown:hover .dropdown-content {
+    display: block; /* Show the dropdown on hover */
+}
+
+.dropdown .fa-caret-down {
+    margin-left: 5px; /* Adjust spacing for the icon */
+    font-size: 0.8em; /* Adjust icon size */
+}
         
         .btn {
             display: inline-block;
@@ -96,7 +135,7 @@
         
         .hero {
             height: 100vh;
-            background: linear-gradient(rgba(44, 108, 255, 0.1), rgba(44, 108, 255, 0.05)), url('/api/placeholder/1400/800') center/cover;
+            background: url('Images/Medical.jpg') center/cover;
             display: flex;
             align-items: center;
             text-align: center;
@@ -105,6 +144,7 @@
         
         .hero-content {
             max-width: 800px;
+            border-radius: 1rem;
             margin: 0 auto;
         }
         
@@ -124,6 +164,7 @@
             display: flex;
             justify-content: center;
             gap: 20px;
+            padding-bottom: 0.45rem;
         }
         
         .btn-secondary {
@@ -276,7 +317,8 @@
         }
         
         .footer-content {
-            display: grid;
+            display: block;
+            text-align: center;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 30px;
             margin-bottom: 40px;
@@ -393,6 +435,52 @@
         
         .login-btn:hover {
             background-color: #194cb1;
+        }
+
+        #userType {
+            display: block; /* Make it take full width */
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box; /* Ensure padding and border are inside the element's width */
+            font-size: 16px;
+            line-height: 1.5;
+            color: #333;
+            background-color: #fff;
+            appearance: none; /* Remove default arrow in some browsers */
+            background-image: url('data:image/svg+xml;utf8,<svg fill="#333" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 1.2em;
+            cursor: pointer;
+        }
+        
+        #userType:focus {
+            outline: none;
+            border-color: #007bff; /* Highlight color on focus */
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5); /* Add a subtle shadow on focus */
+        }
+        
+        /* Style for the options within the select (optional, browser default usually looks fine) */
+        #userType option {
+            padding: 8px;
+            font-size: 16px;
+            color: #333;
+            background-color: #fff;
+        }
+        
+        /* Style for the initially disabled option */
+        #userType option:first-child {
+            color: #777; /* Make the "Select User Type" a bit lighter */
+        }
+
+        .error-message {
+            color: var(--danger);
+            font-size: 14px;
+            margin-top: 5px;
         }
         
         .form-footer {

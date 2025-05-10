@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TimeSync - Medical Appointment Management System</title>
-    <link rel="icon" href="TimeSync.png" type="image/png">
+    <link rel="icon" href="Images/TimeSync.png" type="image/png">
     <link rel="stylesheet" href="styles.css">
 
     <script>
@@ -137,14 +137,21 @@ if (isset($_SESSION['login_error'])) {
         <div class="container">
             <div class="header-content">
                 <div class="logo">
-                    <i class="fas fa-calendar-check"></i>
-                    TimeSync
+                    <img class="icon" src="Images/TimeSync.png" alt="timesync logo">
+                    <span class="logo-text">Time Sync</span>
+                    
                 </div>
                 <nav>
                     <ul class="nav-links">
                         <li><a href="#features">Features</a></li>
                         <li><a href="#how-it-works">How It Works</a></li>
-                        <li><a href="#about">About Us</a></li>
+                        <li class="dropdown">
+            <a href="#">Legal <i class="fas fa-caret-down"></i></a> <ul class="dropdown-content">
+                <li><a href="Legal/terms.html">Terms of Service</a></li>
+                <li><a href="Legal/privacy.html">Privacy Policy</a></li>
+                <li><a href="Legal/compliance.html">Compliance</a></li>
+                <li><a href="Legal/security.html">Security</a></li>
+            </ul>
                         <li><a href="#contact">Contact</a></li>
                         <?php if ($isLoggedIn): ?>
                             <li><a href="dashboard.php">Dashboard</a></li>
@@ -168,7 +175,7 @@ if (isset($_SESSION['login_error'])) {
                         <a href="dashboard.php" class="btn">Go to Dashboard</a>
                     <?php else: ?>
                         <a href="#" id="getStartedBtn" class="btn">Get Started</a>
-                        <a href="#" id="learnMoreBtn" class="btn btn-secondary">Learn More</a>
+                        <a href="#features" id="learnMoreBtn" class="btn btn-secondary">Learn More</a>
                     <?php endif; ?>
                 </div>
             </div>
@@ -247,7 +254,7 @@ if (isset($_SESSION['login_error'])) {
         </div>
     </section>
 
-    <section class="cta">
+    <section class="cta" id="cta">
         <div class="container">
             <h2>Ready to Simplify Your Healthcare Experience?</h2>
             <p>Join thousands of patients and doctors who are already using TimeSync to streamline their healthcare scheduling.</p>
@@ -262,40 +269,16 @@ if (isset($_SESSION['login_error'])) {
     <footer>
         <div class="container">
             <div class="footer-content">
+               
+                
+              
                 <div class="footer-column">
-                    <h3>TimeSync</h3>
+                    <h3>Contact Us</h3>
                     <ul>
-                        <li><a href="#about">About Us</a></li>
-                        <li><a href="#team">Our Team</a></li>
-                        <li><a href="#careers">Careers</a></li>
-                        <li><a href="#news">News & Press</a></li>
-                    </ul>
-                </div>
-                <div class="footer-column">
-                    <h3>Features</h3>
-                    <ul>
-                        <li><a href="#scheduling">Appointment Scheduling</a></li>
-                        <li><a href="#reminders">Reminders</a></li>
-                        <li><a href="#doctor-portal">Doctor Portal</a></li>
-                        <li><a href="#admin-dashboard">Admin Dashboard</a></li>
-                    </ul>
-                </div>
-                <div class="footer-column">
-                    <h3>Support</h3>
-                    <ul>
-                        <li><a href="#help">Help Center</a></li>
-                        <li><a href="#faq">FAQ</a></li>
-                        <li><a href="#contact">Contact Us</a></li>
-                        <li><a href="#feedback">Feedback</a></li>
-                    </ul>
-                </div>
-                <div class="footer-column">
-                    <h3>Legal</h3>
-                    <ul>
-                        <li><a href="#terms">Terms of Service</a></li>
-                        <li><a href="#privacy">Privacy Policy</a></li>
-                        <li><a href="#compliance">Compliance</a></li>
-                        <li><a href="#security">Security</a></li>
+                        <li>Email us: <a href="mailto:info@timesync.dk">info@timesync.dk </a></li>
+                        <li>Phone: +01 23 45 67 89</li>
+                        <li>Location: Niels Brock</li>
+                        
                     </ul>
                 </div>
             </div>
@@ -335,8 +318,8 @@ if (isset($_SESSION['login_error'])) {
             </div>
             <button type="submit" name="login" class="login-btn">Login</button>
             <div class="form-footer">
-                <p>Don't have an account? <a href="#" id="registerLink">Register</a></p>
-                <p><a href="#" id="forgotPasswordLink">Forgot Password?</a></p>
+                <p>Don't have an account? <a href="register.php" id="registerLink">Register</a></p>
+                <p><a href="forgot_password.php" id="forgotPasswordLink">Forgot Password?</a></p>
             </div>
         </form>
     </div>
