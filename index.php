@@ -43,7 +43,7 @@ $isLoggedIn = isset($_SESSION['user_id']);
 if (isset($_POST['login'])) {
     // Get and sanitize form data
     $username = trim($_POST['username']);
-    $password = $_POST['password'];
+    $password = trim($_POST['password']);
     $userType = $_POST['userType'];
     
     // Validate input
@@ -59,14 +59,17 @@ if (isset($_POST['login'])) {
                 case "admin":
                     $table = "admin_users";
                     $redirectPage = "admin_dashboard.php";
+                    $sessionPrefix = "admin";
                     break;
                 case "staff":
                     $table = "doctor_users";
                     $redirectPage = "doctor_dashboard.php";
+                    $sessionPrefix = "doctor";
                     break;
                 case "patient":
                     $table = "patient_users";
                     $redirectPage = "patient_dashboard.php";
+                    $sessionPrefix = "patient";
                     break;
                 default:
                     $error = "Invalid user type";
@@ -77,18 +80,18 @@ if (isset($_POST['login'])) {
                 // Check user credentials
                 $stmt = $conn->prepare("SELECT id, username, password, name, email FROM $table WHERE username = :username OR email = :email");
                 $stmt->bindParam(':username', $username);
-                $stmt->bindParam(':email', $username);
+                $stmt->bindParam(':email', $username); // Use the same variable for email
                 $stmt->execute();
 
                 if ($stmt->rowCount() > 0) {
                     $user = $stmt->fetch(PDO::FETCH_ASSOC);
                     if (password_verify($password, $user["password"])) {
-                        // Authentication successful - create session
-                        $_SESSION['user_id'] = $user["id"];
-                        $_SESSION['username'] = $user["username"];
-                        $_SESSION['name'] = $user["name"];
-                        $_SESSION['email'] = $user["email"];
-                        $_SESSION['user_type'] = $userType;
+                            // Authentication successful - create session
+                            $_SESSION[$sessionPrefix . "_logged_in"] = true;
+                            $_SESSION[$sessionPrefix . "_id"] = $user["id"];
+                            $_SESSION[$sessionPrefix . "_username"] = $user["username"];
+                            $_SESSION[$sessionPrefix . "_name"] = $user["name"];
+                            $_SESSION["user_type"] = $userType; // Store user type in session
                         
                         // Redirect to appropriate dashboard
                         header("Location: $redirectPage");
