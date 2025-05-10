@@ -49,11 +49,14 @@ if (isset($_POST['login'])) {
     // Validate input
     if (empty($username) || empty($password) || empty($userType)) {
         $error = "Please complete all fields";
+        $_SeSSION['login_error'] = $error; // Store error in session
+        
     } else {
         // Authenticate based on user type
         try {
             $table = "";
             $redirectPage = "";
+            $sessionPrefix = "";
             
             switch ($userType) {
                 case "admin":
@@ -73,6 +76,7 @@ if (isset($_POST['login'])) {
                     break;
                 default:
                     $error = "Invalid user type";
+                    $SESSION['login_error'] = $error; // Store error in session
                     break;
             }
             
@@ -98,9 +102,11 @@ if (isset($_POST['login'])) {
                         exit();
                     } else {
                         $error = "Invalid username or password";
+                        $_SESSION['login_error'] = $error; // Store error in session
                     }
                 } else {
                     $error = "Invalid username or password";
+                    $_SESSION['login_error'] = $error; // Store error in session
                 }
             }
         } catch(PDOException $e) {
@@ -117,6 +123,13 @@ if (isset($_GET['logout'])) {
     // Redirect to home page
     header("Location: ".$_SERVER['PHP_SELF']);
     exit();
+}
+
+// Check for login error in session
+if (isset($_SESSION['login_error'])) {
+    $error = $_SESSION['login_error'];
+    unset($_SESSION['login_error']); // Clear the error after displaying
+    echo '<script type="text/javascript">document.addEventListener("DOMContentLoaded", function() { showModal(); });</script>';
 }
 ?>
 
