@@ -181,7 +181,7 @@ try {
             <div class="header-content">
                 <div class="logo">
                     <img class="icon" src="Images/TimeSync.png" alt="timesync logo">
-                    <span class="logo-text">Time Sync</span>
+                    <span class="logo-text"> <a href=index.php>Time Sync</a></span>
                 </div>
                 <nav>
                     <ul class="nav-links">
