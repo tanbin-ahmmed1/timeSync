@@ -152,7 +152,7 @@ if (isset($_SESSION['login_error'])) {
                 <li><a href="Legal/compliance.html">Compliance</a></li>
                 <li><a href="Legal/security.html">Security</a></li>
             </ul>
-                        <li><a href="#contact">Contact</a></li>
+                        <li><a href="#Contact">Contact</a></li>
                         <?php if ($isLoggedIn): ?>
                             <li><a href="dashboard.php">Dashboard</a></li>
                             <li><a href="?logout=true">Logout</a></li>
@@ -273,7 +273,7 @@ if (isset($_SESSION['login_error'])) {
                 
               
                 <div class="footer-column">
-                    <h3>Contact Us</h3>
+                    <h3 id=Contact>Contact Us</h3>
                     <ul>
                         <li>Email us: <a href="mailto:info@timesync.dk">info@timesync.dk </a></li>
                         <li>Phone: +01 23 45 67 89</li>
