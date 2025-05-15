@@ -5,7 +5,7 @@ session_start();
 require 'vendor/autoload.php'; // Include Composer's autoloader
 
 // SendGrid API configuration
-$sendgridApiKey='SG.wQtRrahzQACCvpGIZtO1OA.5u9oCBlubK-83Y7RvZKX3Dz2d0aes-haXpyGYPvUkE';
+$sendgridApiKey='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';
 
 // Import the SendGrid classes at the very top
 use SendGrid\Mail\Mail;
