@@ -8,9 +8,9 @@
 
 // Database configuration
 $db_host = 'localhost';     
-$db_name = 'timesync_db';  
-$db_user = 'timesync_user'; 
-$db_pass = 'your_secure_password';
+$db_name = 'time_sync';  
+$db_user = 'root'; 
+$db_pass = '';
 
 // Create connection
 $conn = new mysqli($db_host, $db_user, $db_pass, $db_name);

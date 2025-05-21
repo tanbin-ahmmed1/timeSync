@@ -2,7 +2,7 @@
 session_start();
 
 // Check if user is already logged in
-$isLoggedIn = isset($_SESSION['user_id']);
+$isLoggedIn = isset($_SESSION['admin_users']);
 if ($isLoggedIn) {
     // Redirect based on user type
     if ($_SESSION['user_type'] === 'admin') {
@@ -67,7 +67,7 @@ try {
     if ($adminCount['count'] == 0) {
         $adminPassword = password_hash("admin123", PASSWORD_DEFAULT);
         $stmt = $conn->prepare("INSERT INTO admin_users (username, password, name, email, phone) 
-                               VALUES ('admin', ?, 'System Administrator', 'admin@timesync.com', '1234567890')");
+                               VALUES ('admin', ?, 'Tanbin Ahmmed', 'tahmmed@timesync.com', '1234567890')");
         $stmt->bind_param("s", $adminPassword);
         $stmt->execute();
         $stmt->close();
@@ -125,7 +125,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // Verify password
             if (password_verify($password, $user['password'])) {
                 // Set session variables
-                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['admin_users'] = $user['id'];
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['name'] = $user['name'];
                 $_SESSION['user_type'] = $userType;

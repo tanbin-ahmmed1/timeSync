@@ -2,8 +2,8 @@
 session_start();
 
 // Check if admin is logged in, if not redirect to login page
-if (!isset($_SESSION['admin_id']) || empty($_SESSION['admin_id'])) {
-    header("Location: logins.php");
+if (!isset($_SESSION['admin_users']) || empty($_SESSION['admin_users'])) {
+    header("Location: login.php");
     exit;
 }
 
@@ -11,7 +11,7 @@ if (!isset($_SESSION['admin_id']) || empty($_SESSION['admin_id'])) {
 require_once 'db_connection.php';
 
 // Get admin information
-$admin_id = $_SESSION['admin_id'];
+$admin_id = $_SESSION['admin_users'];
 // Using admin_users table as per the database schema
 $admin_query = "SELECT name as full_name FROM admin_users WHERE id = ?";
 $stmt = $conn->prepare($admin_query);
@@ -74,45 +74,7 @@ $recent_activities = $conn->query($activity_query);
     <title>Admin Dashboard - TimeSync</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
-    <style>
-        .dashboard-card {
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
-        }
-        
-        .dashboard-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .icon-bg {
-            height: 60px;
-            width: 60px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .sidebar {
-            min-height: 100vh;
-            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-        }
-        
-        .nav-link {
-            border-radius: 5px;
-            margin: 5px 0;
-        }
-        
-        .nav-link:hover {
-            background-color: rgba(0, 123, 255, 0.1);
-        }
-        
-        .active {
-            background-color: #0d6efd;
-            color: white !important;
-        }
-    </style>
+    <link rel="stylesheet" href="adminDashboardStyles.css">
 </head>
 <body>
     <div class="container-fluid">
@@ -121,8 +83,8 @@ $recent_activities = $conn->query($activity_query);
             <div class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
                 <div class="position-sticky pt-3">
                     <div class="text-center mb-4">
-                        <img src="images/timesync-logo.png" alt="TimeSync Logo" height="60">
-                        <h5 class="mt-2">Admin Panel</h5>
+                        <img src="TimeSync.png" alt="TimeSync Logo">
+                        <h5 class="mt-2">TimeSync <br> Admin Panel</h5>
                     </div>
                     <ul class="nav flex-column">
                         <li class="nav-item">
