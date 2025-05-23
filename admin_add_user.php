@@ -3,7 +3,7 @@ session_start();
 
 // Check if admin is logged in, if not redirect to login page
 if (!isset($_SESSION['admin_users']) || empty($_SESSION['admin_users'])) {
-    header("Location: login.php");
+    header("Location: index.php");
     exit;
 }
 
@@ -143,7 +143,6 @@ $stmt->close();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
     <link rel="stylesheet" href="adminDashboardStyles.css">
     <style>
-        /* CSS for dropdown without JavaScript */
         .dropdown {
             position: relative;
             display: inline-block;
