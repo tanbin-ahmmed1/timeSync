@@ -61,17 +61,17 @@ if (isset($_POST['login'])) {
             switch ($userType) {
                 case "admin":
                     $table = "admin_users";
-                    $redirectPage = "admin_dashboard.php";
+                    $redirectPage = "admin/admin_dashboard.php";
                     $sessionPrefix = "admin";
                     break;
                 case "staff":
                     $table = "doctor_users";
-                    $redirectPage = "doctor_dashboard.php";
+                    $redirectPage = "doctor/doctor_dashboard.php";
                     $sessionPrefix = "doctor";
                     break;
                 case "patient":
                     $table = "patient_users";
-                    $redirectPage = "patient_dashboard.php";
+                    $redirectPage = "patient/patient_dashboard.php";
                     $sessionPrefix = "patient";
                     break;
                 default:
@@ -154,7 +154,7 @@ if (isset($_SESSION['login_error'])) {
             </ul>
                         <li><a href="#Contact">Contact</a></li>
                         <?php if ($isLoggedIn): ?>
-                            <li><a href="dashboard.php">Dashboard</a></li>
+                            <li><a href="index.php">Dashboard</a></li>
                             <li><a href="?logout=true">Logout</a></li>
                         <?php else: ?>
                             <li><a href="#" id="loginBtn" class="btn">Login</a></li>

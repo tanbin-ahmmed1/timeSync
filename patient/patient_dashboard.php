@@ -208,8 +208,8 @@ if (isset($_POST['update_profile'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Patient Dashboard - TimeSync</title>
-    <link rel="icon" href="Images/TimeSync.png" type="image/png">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="../Images/TimeSync.png" type="image/png">
+    <link rel="stylesheet" href="../styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
 
 </head>
@@ -218,7 +218,7 @@ if (isset($_POST['update_profile'])) {
         <div class="container">
             <div class="header-content">
                 <div class="logo">
-                    <img class="icon" src="Images/TimeSync.png" alt="timesync logo">
+                    <img class="icon" src="../Images/TimeSync.png" alt="timesync logo">
                     <span class="logo-text">Time Sync</span>
                 </div>
                 <nav>
