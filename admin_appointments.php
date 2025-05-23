@@ -29,10 +29,10 @@ $status_filter = isset($_GET['status']) ? $_GET['status'] : '';
 $date_filter = isset($_GET['date']) ? $_GET['date'] : '';
 $search_query = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// Build base query
+// Build base query - Fixed to match your actual database structure
 $query = "SELECT a.appointment_id, a.appointment_datetime, a.status, a.reason_for_visit,
-          CONCAT(p.first_name, ' ', p.last_name) as patient_name, p.patient_id,
-          CONCAT(d.first_name, ' ', d.last_name) as doctor_name, d.doctor_id
+          p.name as patient_name, p.id as patient_id,
+          d.name as doctor_name, d.id as doctor_id
           FROM appointments a
           JOIN patient_users p ON a.patient_id = p.id
           JOIN doctor_users d ON a.doctor_id = d.id";
@@ -55,8 +55,8 @@ if (!empty($date_filter)) {
 }
 
 if (!empty($search_query)) {
-    $conditions[] = "(CONCAT(p.first_name, ' ', p.last_name) LIKE ? OR 
-                     CONCAT(d.first_name, ' ', d.last_name) LIKE ? OR
+    $conditions[] = "(p.name LIKE ? OR 
+                     d.name LIKE ? OR
                      a.reason_for_visit LIKE ?)";
     $search_param = "%$search_query%";
     $params[] = $search_param;
@@ -76,6 +76,11 @@ $query .= " ORDER BY a.appointment_datetime DESC";
 // Prepare and execute query
 $stmt = $conn->prepare($query);
 
+// Check if prepare was successful
+if ($stmt === false) {
+    die("Prepare failed: " . $conn->error);
+}
+
 if (!empty($params)) {
     $stmt->bind_param($types, ...$params);
 }
@@ -88,8 +93,10 @@ $appointments = $result->fetch_all(MYSQLI_ASSOC);
 $status_counts_query = "SELECT status, COUNT(*) as count FROM appointments GROUP BY status";
 $status_counts_result = $conn->query($status_counts_query);
 $status_counts = [];
-while ($row = $status_counts_result->fetch_assoc()) {
-    $status_counts[$row['status']] = $row['count'];
+if ($status_counts_result) {
+    while ($row = $status_counts_result->fetch_assoc()) {
+        $status_counts[$row['status']] = $row['count'];
+    }
 }
 ?>
 
