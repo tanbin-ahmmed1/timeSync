@@ -10,6 +10,12 @@ if (!isset($_SESSION['admin_users']) || empty($_SESSION['admin_users'])) {
 // Include database connection
 require_once 'db_connection.php';
 
+// Process dropdown menu actions
+$showUserMenu = false;
+if (isset($_GET['toggle_menu']) && $_GET['toggle_menu'] == 'user') {
+    $showUserMenu = true;
+}
+
 // Get admin information
 $admin_id = $_SESSION['admin_users'];
 // Using admin_users table as per the database schema
@@ -75,6 +81,89 @@ $recent_activities = $conn->query($activity_query);
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
     <link rel="stylesheet" href="adminDashboardStyles.css">
+    <style>
+        /* CSS for dropdown without JavaScript */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            min-width: 10rem;
+            padding: 0.5rem 0;
+            margin: 0.125rem 0 0;
+            background-color: #fff;
+            border: 1px solid rgba(0,0,0,.15);
+            border-radius: 0.25rem;
+            z-index: 1000;
+        }
+        
+        .dropdown-menu.show {
+            display: block;
+        }
+        
+        .dropdown-divider {
+            height: 0;
+            margin: 0.5rem 0;
+            overflow: hidden;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .dropdown-item {
+            display: block;
+            width: 100%;
+            padding: 0.25rem 1.5rem;
+            clear: both;
+            font-weight: 400;
+            color: #212529;
+            text-align: inherit;
+            white-space: nowrap;
+            background-color: transparent;
+            border: 0;
+            text-decoration: none;
+        }
+        
+        .dropdown-item:hover, .dropdown-item:focus {
+            color: #16181b;
+            text-decoration: none;
+            background-color: #f8f9fa;
+        }
+        
+        .dropdown-item.text-danger {
+            color: #dc3545;
+        }
+        
+        /* Custom tooltip CSS */
+        [data-tooltip] {
+            position: relative;
+            cursor: pointer;
+        }
+        
+        [data-tooltip]:before {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 5px 10px;
+            background-color: #000;
+            color: #fff;
+            border-radius: 4px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+            z-index: 1000;
+        }
+        
+        [data-tooltip]:hover:before {
+            opacity: 0.9;
+            visibility: visible;
+        }
+    </style>
 </head>
 <body>
     <div class="container-fluid">
@@ -136,10 +225,10 @@ $recent_activities = $conn->query($activity_query);
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">Dashboard</h1>
                     <div class="dropdown">
-                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a href="?toggle_menu=user" class="btn btn-outline-secondary <?php echo $showUserMenu ? 'active' : ''; ?>">
                             <i class="fas fa-user-circle me-1"></i> <?php echo htmlspecialchars($admin_data['full_name']); ?>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                        </a>
+                        <ul class="dropdown-menu <?php echo $showUserMenu ? 'show' : ''; ?>" aria-labelledby="userDropdown">
                             <li><a class="dropdown-item" href="admin_profile.php"><i class="fas fa-user me-2"></i> Profile</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item text-danger" href="admin_logout.php"><i class="fas fa-sign-out-alt me-2"></i> Logout</a></li>
@@ -284,7 +373,9 @@ $recent_activities = $conn->query($activity_query);
                                                             </span>
                                                         </td>
                                                         <td>
-                                                            <a href="admin_appointment_edit.php?id=<?php echo $appt['appointment_id']; ?>" class="btn btn-sm btn-outline-primary">
+                                                            <a href="admin_appointment_edit.php?id=<?php echo $appt['appointment_id']; ?>" 
+                                                               class="btn btn-sm btn-outline-primary" 
+                                                               data-tooltip="Edit Appointment">
                                                                 <i class="fas fa-edit"></i>
                                                             </a>
                                                         </td>
@@ -356,14 +447,5 @@ $recent_activities = $conn->query($activity_query);
             </main>
         </div>
     </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Initialize tooltips
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl)
-        })
-    </script>
 </body>
 </html>

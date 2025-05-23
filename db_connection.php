@@ -1,12 +1,5 @@
 <?php
-/**
- * Database Connection Script for TimeSync
- * 
- * This file establishes a secure connection to the MySQL database
- * and provides error handling for connection failures.
- */
-
-// Database configuration
+//Database connection
 $db_host = 'localhost';     
 $db_name = 'time_sync';  
 $db_user = 'root'; 

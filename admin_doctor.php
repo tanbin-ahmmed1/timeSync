@@ -61,6 +61,17 @@ if (isset($_GET['action']) && $_GET['action'] == 'delete' && isset($_GET['id']))
     }
 }
 
+// Handle the export action
+if (isset($_POST['export'])) {
+    // Redirect to export script with current filters
+    $search_term = isset($_GET['search']) ? $_GET['search'] : '';
+    $department_filter = isset($_GET['department']) ? $_GET['department'] : '';
+    $status_filter = isset($_GET['status']) ? $_GET['status'] : '';
+    
+    header("Location: admin_doctor_export.php?search=$search_term&department=$department_filter&status=$status_filter");
+    exit;
+}
+
 // Get filter and search parameters
 $department_filter = isset($_GET['department']) ? $_GET['department'] : '';
 $status_filter = isset($_GET['status']) ? $_GET['status'] : '';
@@ -136,6 +147,44 @@ $total_doctors = $count_result->fetch_assoc()['total'];
 
 // Count active doctors (all doctors are considered active in this simplified version)
 $active_doctors = $total_doctors;
+
+// Handle delete confirmation form submission
+if (isset($_POST['confirm_delete']) && isset($_POST['doctor_id'])) {
+    $doctor_id = $_POST['doctor_id'];
+    
+    // Check if doctor has any appointments before deletion
+    $check_appointments = "SELECT COUNT(*) as count FROM appointments WHERE doctor_id = ?";
+    $stmt = $conn->prepare($check_appointments);
+    $stmt->bind_param("i", $doctor_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $appointment_count = $result->fetch_assoc()['count'];
+    
+    if ($appointment_count > 0) {
+        $message = "Cannot delete doctor. They have $appointment_count appointments in the system.";
+        $message_type = "danger";
+    } else {
+        // Delete doctor user
+        $delete_query = "DELETE FROM doctor_users WHERE id = ?";
+        $stmt = $conn->prepare($delete_query);
+        $stmt->bind_param("i", $doctor_id);
+        
+        if ($stmt->execute()) {
+            // Log admin activity
+            $action_details = "deleted doctor ID: $doctor_id";
+            $log_query = "INSERT INTO admin_activity_log (admin_id, action_type, action_details) VALUES (?, 'DELETE', ?)";
+            $log_stmt = $conn->prepare($log_query);
+            $log_stmt->bind_param("is", $admin_id, $action_details);
+            $log_stmt->execute();
+            
+            $message = "Doctor deleted successfully.";
+            $message_type = "success";
+        } else {
+            $message = "Error deleting doctor: " . $conn->error;
+            $message_type = "danger";
+        }
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -213,6 +262,108 @@ $active_doctors = $total_doctors;
             background-color: #f8f9fa;
             border-left: 4px solid #007bff;
         }
+        
+        /* CSS for dropdown menu */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+        
+        .dropdown:hover .dropdown-menu {
+            display: block;
+        }
+        
+        .dropdown-menu a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+        
+        .dropdown-menu a:hover {
+            background-color: #f1f1f1;
+        }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1050;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        
+        .modal-dialog {
+            position: relative;
+            width: auto;
+            margin: 1.75rem auto;
+            max-width: 500px;
+        }
+        
+        .modal-content {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            background-color: #fff;
+            border: 1px solid rgba(0,0,0,.2);
+            border-radius: 0.3rem;
+            outline: 0;
+        }
+        
+        .modal-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            padding: 1rem;
+            border-bottom: 1px solid #dee2e6;
+            border-top-left-radius: 0.3rem;
+            border-top-right-radius: 0.3rem;
+        }
+        
+        .modal-body {
+            position: relative;
+            flex: 1 1 auto;
+            padding: 1rem;
+        }
+        
+        .modal-footer {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 1rem;
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .show-modal {
+            display: block;
+        }
+        
+        .btn-close {
+            float: right;
+            font-size: 1.5rem;
+            font-weight: 700;
+            line-height: 1;
+            color: #000;
+            text-shadow: 0 1px 0 #fff;
+            opacity: .5;
+            background: transparent;
+            border: 0;
+            padding: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -275,14 +426,14 @@ $active_doctors = $total_doctors;
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">Manage Doctors</h1>
                     <div class="dropdown">
-                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown">
                             <i class="fas fa-user-circle me-1"></i> <?php echo htmlspecialchars($admin_data['full_name']); ?>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                            <li><a class="dropdown-item" href="admin_profile.php"><i class="fas fa-user me-2"></i> Profile</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-danger" href="admin_logout.php"><i class="fas fa-sign-out-alt me-2"></i> Logout</a></li>
-                        </ul>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item" href="admin_profile.php"><i class="fas fa-user me-2"></i> Profile</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item text-danger" href="admin_logout.php"><i class="fas fa-sign-out-alt me-2"></i> Logout</a>
+                        </div>
                     </div>
                 </div>
 
@@ -408,12 +559,14 @@ $active_doctors = $total_doctors;
                                 <a href="admin_doctor_add.php" class="btn btn-success">
                                     <i class="fas fa-plus-circle me-2"></i>Add New Doctor
                                 </a>
-                                <button class="btn btn-outline-secondary ms-2" data-bs-toggle="modal" data-bs-target="#importModal">
+                                <a href="#importModal" class="btn btn-outline-secondary ms-2" onclick="document.getElementById('importModal').style.display='block'">
                                     <i class="fas fa-file-import me-2"></i>Import
-                                </button>
-                                <button class="btn btn-outline-primary ms-2" id="exportBtn">
-                                    <i class="fas fa-file-export me-2"></i>Export
-                                </button>
+                                </a>
+                                <form method="post" action="" style="display:inline;">
+                                    <button type="submit" name="export" class="btn btn-outline-primary ms-2">
+                                        <i class="fas fa-file-export me-2"></i>Export
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -469,21 +622,21 @@ $active_doctors = $total_doctors;
                                             <a href="admin_doctor_edit.php?id=<?php echo $doctor['doctor_id']; ?>" class="btn btn-outline-warning">
                                                 <i class="fas fa-edit me-1"></i> Edit
                                             </a>
-                                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal<?php echo $doctor['doctor_id']; ?>">
+                                            <a href="#deleteModal<?php echo $doctor['doctor_id']; ?>" class="btn btn-outline-danger" onclick="document.getElementById('deleteModal<?php echo $doctor['doctor_id']; ?>').style.display='block'">
                                                 <i class="fas fa-trash-alt me-1"></i> Delete
-                                            </button>
+                                            </a>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             
                             <!-- Delete Confirmation Modal -->
-                            <div class="modal fade" id="deleteModal<?php echo $doctor['doctor_id']; ?>" tabindex="-1" aria-labelledby="deleteModalLabel<?php echo $doctor['doctor_id']; ?>" aria-hidden="true">
+                            <div id="deleteModal<?php echo $doctor['doctor_id']; ?>" class="modal">
                                 <div class="modal-dialog">
                                     <div class="modal-content">
                                         <div class="modal-header">
-                                            <h5 class="modal-title" id="deleteModalLabel<?php echo $doctor['doctor_id']; ?>">Confirm Delete</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            <h5 class="modal-title">Confirm Delete</h5>
+                                            <button type="button" class="btn-close" onclick="document.getElementById('deleteModal<?php echo $doctor['doctor_id']; ?>').style.display='none'"></button>
                                         </div>
                                         <div class="modal-body">
                                             <p>Are you sure you want to delete Dr. <?php echo htmlspecialchars($doctor['name']); ?>?</p>
@@ -500,10 +653,13 @@ $active_doctors = $total_doctors;
                                             <?php endif; ?>
                                         </div>
                                         <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                            <a href="admin_doctors.php?action=delete&id=<?php echo $doctor['doctor_id']; ?>" class="btn btn-danger">
-                                                <i class="fas fa-trash-alt me-2"></i>Delete Doctor
-                                            </a>
+                                            <button type="button" class="btn btn-secondary" onclick="document.getElementById('deleteModal<?php echo $doctor['doctor_id']; ?>').style.display='none'">Cancel</button>
+                                            <form method="post" action="">
+                                                <input type="hidden" name="doctor_id" value="<?php echo $doctor['doctor_id']; ?>">
+                                                <button type="submit" name="confirm_delete" class="btn btn-danger">
+                                                    <i class="fas fa-trash-alt me-2"></i>Delete Doctor
+                                                </button>
+                                            </form>
                                         </div>
                                     </div>
                                 </div>
@@ -528,54 +684,15 @@ $active_doctors = $total_doctors;
     </div>
 
     <!-- Import Modal -->
-    <div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
+    <div id="importModal" class="modal">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="importModalLabel">Import Doctors</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title">Import Doctors</h5>
+                    <button type="button" class="btn-close" onclick="document.getElementById('importModal').style.display='none'"></button>
                 </div>
                 <div class="modal-body">
                     <form action="admin_doctor_import.php" method="post" enctype="multipart/form-data">
                         <div class="mb-3">
                             <label for="importFile" class="form-label">Select CSV File</label>
                             <input class="form-control" type="file" id="importFile" name="importFile" accept=".csv">
-                        </div>
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            Please make sure your CSV file has the following columns: 
-                            name, email, phone, department
-                        </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-file-import me-2"></i>Import
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Initialize tooltips
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl)
-        })
-        
-        // Handle export button
-        document.getElementById('exportBtn').addEventListener('click', function() {
-            // Get current filter parameters
-            const urlParams = new URLSearchParams(window.location.search);
-            const search = urlParams.get('search') || '';
-            const department = urlParams.get('department') || '';
-            const status = urlParams.get('status') || '';
-            
-            // Redirect to export script with current filters
-            window.location.href = `admin_doctor_export.php?search=${search}&department=${department}&status=${status}`;
-        });
-    </script>
-</body>
-</html>
