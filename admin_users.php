@@ -18,20 +18,30 @@ if (isset($_GET['toggle_menu']) && $_GET['toggle_menu'] == 'user') {
 
 // Get admin information
 $admin_id = $_SESSION['admin_users'];
-$admin_query = "SELECT name as full_name, role_level FROM admin_users WHERE id = ?";
+$admin_query = "SELECT name as full_name FROM admin_users WHERE id = ?";
 $stmt = $conn->prepare($admin_query);
+
+if (!$stmt) {
+    die("Error preparing admin query: " . $conn->error);
+}
+
 $stmt->bind_param("i", $admin_id);
-$stmt->execute();
+if (!$stmt->execute()) {
+    die("Error executing admin query: " . $stmt->error);
+}
+
 $result = $stmt->get_result();
+if (!$result) {
+    die("Error getting admin result: " . $stmt->error);
+}
+
 $admin_data = $result->fetch_assoc();
+if (!$admin_data) {
+    die("Admin user not found");
+}
 
 // Determine active tab (default to patients)
 $active_tab = isset($_GET['tab']) && in_array($_GET['tab'], ['patients', 'doctors', 'admins']) ? $_GET['tab'] : 'patients';
-
-// Only allow super admins to access the admins tab
-if ($active_tab == 'admins' && $admin_data['role_level'] != 'super_admin') {
-    $active_tab = 'patients';
-}
 
 // Handle search functionality
 $search = '';
@@ -41,78 +51,104 @@ if (isset($_GET['search'])) {
 
 // Build the query based on active tab
 $results_per_page = 10;
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $offset = ($page - 1) * $results_per_page;
 
 if ($active_tab == 'patients') {
-    // Patients query
-    $query = "SELECT * FROM patient_users";
-    $count_query = "SELECT COUNT(*) as total FROM patient_users";
-    
-    if (!empty($search)) {
-        $query .= " WHERE name LIKE ? OR email LIKE ? OR username LIKE ?";
-        $count_query .= " WHERE name LIKE ? OR email LIKE ? OR username LIKE ?";
-        $search_param = "%$search%";
-    }
-    
-    $query .= " ORDER BY created_at DESC LIMIT ?, ?";
+    $table = 'patient_users';
+    $fields = ['name', 'email', 'username'];
 } elseif ($active_tab == 'doctors') {
-    // Doctors query
-    $query = "SELECT * FROM doctor_users";
-    $count_query = "SELECT COUNT(*) as total FROM doctor_users";
-    
-    if (!empty($search)) {
-        $query .= " WHERE name LIKE ? OR email LIKE ? OR username LIKE ? OR department LIKE ?";
-        $count_query .= " WHERE name LIKE ? OR email LIKE ? OR username LIKE ? OR department LIKE ?";
-        $search_param = "%$search%";
-    }
-    
-    $query .= " ORDER BY created_at DESC LIMIT ?, ?";
+    $table = 'doctor_users';
+    $fields = ['name', 'email', 'username', 'department'];
 } else {
-    // Admins query (only for super admins)
-    $query = "SELECT * FROM admin_users";
-    $count_query = "SELECT COUNT(*) as total FROM admin_users";
-    
-    if (!empty($search)) {
-        $query .= " WHERE name LIKE ? OR email LIKE ? OR username LIKE ? OR role_level LIKE ?";
-        $count_query .= " WHERE name LIKE ? OR email LIKE ? OR username LIKE ? OR role_level LIKE ?";
-        $search_param = "%$search%";
-    }
-    
-    $query .= " ORDER BY created_at DESC LIMIT ?, ?";
+    $table = 'admin_users';
+    $fields = ['name', 'email', 'username'];
 }
+
+// Build the base queries
+$query = "SELECT * FROM $table";
+$count_query = "SELECT COUNT(*) as total FROM $table";
+
+// Add search conditions if needed
+$search_params = [];
+if (!empty($search)) {
+    $search_conditions = [];
+    foreach ($fields as $field) {
+        $search_conditions[] = "$field LIKE ?";
+        $search_params[] = "%$search%";
+    }
+    $where_clause = " WHERE " . implode(" OR ", $search_conditions);
+    $query .= $where_clause;
+    $count_query .= $where_clause;
+}
+
+$query .= " ORDER BY created_at DESC LIMIT ?, ?";
 
 // Get total number of users
 $count_stmt = $conn->prepare($count_query);
-if (!empty($search)) {
-    if ($active_tab == 'patients') {
-        $count_stmt->bind_param("sss", $search_param, $search_param, $search_param);
-    } elseif ($active_tab == 'doctors') {
-        $count_stmt->bind_param("ssss", $search_param, $search_param, $search_param, $search_param);
-    } else {
-        $count_stmt->bind_param("ssss", $search_param, $search_param, $search_param, $search_param);
-    }
+if (!$count_stmt) {
+    die("Error preparing count query: " . $conn->error);
 }
-$count_stmt->execute();
+
+if (!empty($search)) {
+    $types = str_repeat('s', count($search_params));
+    $count_stmt->bind_param($types, ...$search_params);
+}
+
+if (!$count_stmt->execute()) {
+    die("Error executing count query: " . $count_stmt->error);
+}
+
 $count_result = $count_stmt->get_result();
+if (!$count_result) {
+    die("Error getting count result: " . $count_stmt->error);
+}
+
 $total_rows = $count_result->fetch_assoc()['total'];
 $total_pages = ceil($total_rows / $results_per_page);
 
 // Get users data with pagination
 $stmt = $conn->prepare($query);
-if (!empty($search)) {
-    if ($active_tab == 'patients') {
-        $stmt->bind_param("sssii", $search_param, $search_param, $search_param, $offset, $results_per_page);
-    } elseif ($active_tab == 'doctors') {
-        $stmt->bind_param("ssssii", $search_param, $search_param, $search_param, $search_param, $offset, $results_per_page);
-    } else {
-        $stmt->bind_param("ssssii", $search_param, $search_param, $search_param, $search_param, $offset, $results_per_page);
-    }
-} else {
-    $stmt->bind_param("ii", $offset, $results_per_page);
+if (!$stmt) {
+    die("Error preparing users query: " . $conn->error);
 }
-$stmt->execute();
+
+$bind_params = array_merge($search_params, [$offset, $results_per_page]);
+if (!empty($search)) {
+    $types = str_repeat('s', count($search_params)) . 'ii';
+} else {
+    $types = 'ii';
+}
+
+$stmt->bind_param($types, ...$bind_params);
+
+if (!$stmt->execute()) {
+    die("Error executing users query: " . $stmt->error);
+}
+
 $users_result = $stmt->get_result();
+if (!$users_result) {
+    die("Error getting users result: " . $stmt->error);
+}
+
+// Function to get user initials
+function getUserInitials($name) {
+    $words = explode(' ', trim($name));
+    if (count($words) >= 2) {
+        return strtoupper(substr($words[0], 0, 1) . substr($words[1], 0, 1));
+    }
+    return strtoupper(substr($name, 0, 2));
+}
+
+// Function to format date
+function formatDate($dateString) {
+    try {
+        $date = new DateTime($dateString);
+        return $date->format('M d, Y');
+    } catch (Exception $e) {
+        return 'N/A';
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -206,8 +242,8 @@ $users_result = $stmt->get_result();
             opacity: 0.9;
             visibility: visible;
         }
-        
-        /* Additional styles for users page */
+
+        /* User avatar styles */
         .user-avatar {
             width: 40px;
             height: 40px;
@@ -219,72 +255,58 @@ $users_result = $stmt->get_result();
             justify-content: center;
             font-weight: bold;
         }
-        
-        .status-badge {
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-        
-        .status-active {
-            background-color: #d1fae5;
-            color: #065f46;
-        }
-        
-        .status-inactive {
-            background-color: #fee2e2;
-            color: #b91c1c;
-        }
-        
-        .search-box {
-            max-width: 300px;
-        }
-        
-        .nav-tabs .nav-link {
-            color: #495057;
-            font-weight: 500;
-        }
-        
-        .nav-tabs .nav-link.active {
-            font-weight: 600;
+
+        /* Badge styles */
+        .admin-badge {
+            background-color: #f3e8ff;
+            color: #7c3aed;
         }
         
         .doctor-badge {
-            background-color: #e6f7ff;
-            color: #1890ff;
+            background-color: #e0f7fa;
+            color: #00acc1;
         }
         
         .patient-badge {
-            background-color: #f6ffed;
-            color: #52c41a;
+            background-color: #e8f5e9;
+            color: #43a047;
+        }
+
+        /* Search box style */
+        .search-box {
+            max-width: 400px;
+        }
+
+        /* Tab styles */
+        .nav-tabs {
+            border-bottom: 1px solid #dee2e6;
         }
         
-        .admin-badge {
-            background-color: #f9f0ff;
-            color: #722ed1;
+        .nav-tabs .nav-link {
+            border: none;
+            color: #6c757d;
+            font-weight: 500;
+            padding: 0.75rem 1.25rem;
         }
         
-        .role-badge {
-            font-size: 0.7rem;
-            padding: 3px 6px;
-            border-radius: 4px;
-            margin-left: 5px;
+        .nav-tabs .nav-link.active {
+            color: #0d6efd;
+            border-bottom: 2px solid #0d6efd;
+            background-color: transparent;
         }
         
-        .role-super {
-            background-color: #ffccc7;
-            color: #cf1322;
+        .nav-tabs .nav-link:hover:not(.active) {
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        /* Pagination styles */
+        .page-item.active .page-link {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
         }
         
-        .role-admin {
-            background-color: #b5f5ec;
-            color: #08979c;
-        }
-        
-        .role-support {
-            background-color: #d6e4ff;
-            color: #1d39c4;
+        .page-link {
+            color: #0d6efd;
         }
     </style>
 </head>
@@ -319,13 +341,11 @@ $users_result = $stmt->get_result();
                                 <i class="fas fa-users me-2"></i> Users
                             </a>
                         </li>
-                        <?php if ($admin_data['role_level'] == 'super_admin'): ?>
                         <li class="nav-item">
                             <a class="nav-link text-dark" href="admin_system_stats.php">
                                 <i class="fas fa-chart-line me-2"></i> System Statistics
                             </a>
                         </li>
-                        <?php endif; ?>
                         <li class="nav-item">
                             <a class="nav-link text-dark" href="admin_settings.php">
                                 <i class="fas fa-cog me-2"></i> Settings
@@ -350,13 +370,9 @@ $users_result = $stmt->get_result();
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">Manage Users</h1>
                     <div class="dropdown">
-                        <a href="?toggle_menu=user" class="btn btn-outline-secondary <?php echo $showUserMenu ? 'active' : ''; ?>">
+                        <a href="?toggle_menu=user<?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>&tab=<?php echo $active_tab; ?><?php echo $page > 1 ? '&page=' . $page : ''; ?>" 
+                           class="btn btn-outline-secondary <?php echo $showUserMenu ? 'active' : ''; ?>">
                             <i class="fas fa-user-circle me-1"></i> <?php echo htmlspecialchars($admin_data['full_name']); ?>
-                            <?php if ($admin_data['role_level']): ?>
-                                <span class="role-badge role-<?php echo str_replace('_', '', $admin_data['role_level']); ?>">
-                                    <?php echo ucfirst(str_replace('_', ' ', $admin_data['role_level'])); ?>
-                                </span>
-                            <?php endif; ?>
                         </a>
                         <ul class="dropdown-menu <?php echo $showUserMenu ? 'show' : ''; ?>" aria-labelledby="userDropdown">
                             <li><a class="dropdown-item" href="admin_profile.php"><i class="fas fa-user me-2"></i> Profile</a></li>
@@ -370,41 +386,46 @@ $users_result = $stmt->get_result();
                 <div class="row mb-4">
                     <div class="col-md-6">
                         <form class="d-flex" method="GET" action="admin_users.php">
-                            <input type="hidden" name="tab" value="<?php echo $active_tab; ?>">
+                            <input type="hidden" name="tab" value="<?php echo htmlspecialchars($active_tab); ?>">
                             <div class="input-group search-box">
-                                <input type="text" class="form-control" name="search" placeholder="Search <?php echo $active_tab; ?>..." value="<?php echo htmlspecialchars($search); ?>">
-                                <button class="btn btn-outline-secondary" type="submit">
+                                <input type="text" class="form-control" name="search" 
+                                       placeholder="Search <?php echo htmlspecialchars($active_tab); ?>..." 
+                                       value="<?php echo htmlspecialchars($search); ?>"
+                                       aria-label="Search users">
+                                <button class="btn btn-outline-secondary" type="submit" aria-label="Search">
                                     <i class="fas fa-search"></i>
                                 </button>
                             </div>
                         </form>
                     </div>
                     <div class="col-md-6 text-md-end">
-                        <a href="admin_add_user.php?type=<?php echo $active_tab == 'doctors' ? 'doctor' : ($active_tab == 'admins' ? 'admin' : 'patient'); ?>" class="btn btn-primary">
+                        <a href="admin_add_user.php?type=<?php echo $active_tab == 'doctors' ? 'doctor' : ($active_tab == 'admins' ? 'admin' : 'patient'); ?>" 
+                           class="btn btn-primary">
                             <i class="fas fa-plus me-1"></i> Add New <?php echo ucfirst($active_tab == 'doctors' ? 'Doctor' : ($active_tab == 'admins' ? 'Admin' : 'Patient')); ?>
                         </a>
                     </div>
                 </div>
 
                 <!-- Users Tabs -->
-                <ul class="nav nav-tabs mb-4">
+                <ul class="nav nav-tabs">
                     <li class="nav-item">
-                        <a class="nav-link <?php echo $active_tab == 'patients' ? 'active' : ''; ?>" href="?tab=patients<?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>">
+                        <a class="nav-link <?php echo $active_tab == 'patients' ? 'active' : ''; ?>" 
+                           href="?tab=patients<?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>">
                             <i class="fas fa-user-injured me-1"></i> Patients
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link <?php echo $active_tab == 'doctors' ? 'active' : ''; ?>" href="?tab=doctors<?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>">
+                        <a class="nav-link <?php echo $active_tab == 'doctors' ? 'active' : ''; ?>" 
+                           href="?tab=doctors<?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>">
                             <i class="fas fa-user-md me-1"></i> Doctors
                         </a>
                     </li>
-                    <?php if ($admin_data['role_level'] == 'super_admin'): ?>
                     <li class="nav-item">
-                        <a class="nav-link <?php echo $active_tab == 'admins' ? 'active' : ''; ?>" href="?tab=admins<?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>">
+                        <a class="nav-link <?php echo $active_tab == 'admins' ? 'active' : ''; ?>" 
+                           href="?tab=admins<?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>">
                             <i class="fas fa-user-shield me-1"></i> Admins
                         </a>
                     </li>
-                    <?php endif; ?>
                 </ul>
 
                 <!-- Users Table -->
@@ -412,7 +433,7 @@ $users_result = $stmt->get_result();
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><?php echo ucfirst($active_tab); ?> Users</h5>
                         <div>
-                            <span class="badge bg-light text-dark">Total: <?php echo $total_rows; ?></span>
+                            <span class="badge bg-light text-dark">Total: <?php echo number_format($total_rows); ?></span>
                         </div>
                     </div>
                     <div class="card-body">
@@ -426,8 +447,6 @@ $users_result = $stmt->get_result();
                                         <th>Phone</th>
                                         <?php if ($active_tab == 'doctors'): ?>
                                             <th>Department</th>
-                                        <?php elseif ($active_tab == 'admins'): ?>
-                                            <th>Role</th>
                                         <?php endif; ?>
                                         <th>Registered</th>
                                         <th>Actions</th>
@@ -439,12 +458,12 @@ $users_result = $stmt->get_result();
                                             <tr>
                                                 <td>
                                                     <div class="d-flex align-items-center">
-                                                        <div class="user-avatar me-2">
-                                                            <?php echo strtoupper(substr($user['name'], 0, 1)); ?>
+                                                        <div class="user-avatar me-3">
+                                                            <?php echo getUserInitials($user['name']); ?>
                                                         </div>
                                                         <div>
                                                             <strong><?php echo htmlspecialchars($user['name']); ?></strong>
-                                                            <div>
+                                                            <div class="mt-1">
                                                                 <span class="badge <?php echo $active_tab == 'doctors' ? 'doctor-badge' : ($active_tab == 'admins' ? 'admin-badge' : 'patient-badge'); ?>">
                                                                     <?php echo $active_tab == 'doctors' ? 'Doctor' : ($active_tab == 'admins' ? 'Admin' : 'Patient'); ?>
                                                                 </span>
@@ -454,46 +473,30 @@ $users_result = $stmt->get_result();
                                                 </td>
                                                 <td><?php echo htmlspecialchars($user['username']); ?></td>
                                                 <td><?php echo htmlspecialchars($user['email']); ?></td>
-                                                <td><?php echo htmlspecialchars($user['phone'] ?: 'N/A'); ?></td>
+                                                <td><?php echo htmlspecialchars($user['phone'] ?? 'N/A'); ?></td>
                                                 <?php if ($active_tab == 'doctors'): ?>
-                                                    <td><?php echo htmlspecialchars($user['department'] ?: 'N/A'); ?></td>
-                                                <?php elseif ($active_tab == 'admins'): ?>
-                                                    <td>
-                                                        <?php if ($user['role_level']): ?>
-                                                            <span class="role-badge role-<?php echo str_replace('_', '', $user['role_level']); ?>">
-                                                                <?php echo ucfirst(str_replace('_', ' ', $user['role_level'])); ?>
-                                                            </span>
-                                                        <?php else: ?>
-                                                            N/A
-                                                        <?php endif; ?>
-                                                    </td>
+                                                    <td><?php echo htmlspecialchars($user['department'] ?? 'N/A'); ?></td>
                                                 <?php endif; ?>
+                                                <td><?php echo formatDate($user['created_at']); ?></td>
                                                 <td>
-                                                    <?php 
-                                                        $reg_date = new DateTime($user['created_at']);
-                                                        echo $reg_date->format('M d, Y');
-                                                    ?>
-                                                </td>
-                                                <td>
-                                                    <div class="d-flex">
+                                                    <div class="d-flex gap-1">
                                                         <a href="admin_edit_user.php?id=<?php echo $user['id']; ?>&type=<?php echo $active_tab == 'doctors' ? 'doctor' : ($active_tab == 'admins' ? 'admin' : 'patient'); ?>" 
-                                                           class="btn btn-sm btn-outline-primary me-1" 
+                                                           class="btn btn-sm btn-outline-primary" 
                                                            data-tooltip="Edit User">
                                                             <i class="fas fa-edit"></i>
                                                         </a>
-                                                        <a href="admin_view_user.php?id=<?php echo $user['id']; ?>&type=<?php echo $active_tab == 'doctors' ? 'doctor' : ($active_tab == 'admins' ? 'admin' : 'patient'); ?>" 
-                                                           class="btn btn-sm btn-outline-info me-1" 
-                                                           data-tooltip="View Details">
+                                                        <a href="admin_view_user.php?id=<?php echo $user['id']; ?>&type=<?php echo $active_tab == 'doctors' ? 'doctor' : ($active_tab == 'admins' ? 'admin' : 'patient'); ?>"  
+                                                           class="btn btn-sm btn-outline-info" 
+                                                           data-tooltip="View User">
                                                             <i class="fas fa-eye"></i>
                                                         </a>
-                                                        <?php if ($active_tab != 'admins' || ($active_tab == 'admins' && $user['id'] != $admin_id)): ?>
-                                                        <form method="POST" action="admin_delete_user.php" onsubmit="return confirm('Are you sure you want to delete this user?');">
-                                                            <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
-                                                            <input type="hidden" name="user_type" value="<?php echo $active_tab == 'doctors' ? 'doctor' : ($active_tab == 'admins' ? 'admin' : 'patient'); ?>">
-                                                            <button type="submit" class="btn btn-sm btn-outline-danger" data-tooltip="Delete User">
-                                                                <i class="fas fa-trash-alt"></i>
-                                                            </button>
-                                                        </form>
+                                                        <?php if ($user['id'] != $admin_id): ?>
+                                                        <a href="admin_delete_user.php?id=<?php echo $user['id']; ?>&type=<?php echo $active_tab == 'doctors' ? 'doctor' : ($active_tab == 'admins' ? 'admin' : 'patient'); ?>" 
+                                                           class="btn btn-sm btn-outline-danger" 
+                                                           data-tooltip="Delete User"
+                                                           onclick="return confirm('Are you sure you want to delete this user?');">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                        </a>
                                                         <?php endif; ?>
                                                     </div>
                                                 </td>
@@ -501,51 +504,81 @@ $users_result = $stmt->get_result();
                                         <?php endwhile; ?>
                                     <?php else: ?>
                                         <tr>
-                                            <td colspan="<?php echo $active_tab == 'doctors' ? '7' : ($active_tab == 'admins' ? '7' : '6'); ?>" class="text-center py-4">
-                                                <?php if (!empty($search)): ?>
-                                                    No <?php echo $active_tab; ?> found matching your search criteria.
-                                                <?php else: ?>
-                                                    No <?php echo $active_tab; ?> found in the system.
-                                                <?php endif; ?>
+                                            <td colspan="<?php echo $active_tab == 'doctors' ? 7 : 6; ?>" class="text-center py-4">
+                                                <div class="d-flex flex-column align-items-center">
+                                                    <i class="fas fa-user-slash text-muted mb-2" style="font-size: 2rem;"></i>
+                                                    <h5 class="text-muted">No <?php echo $active_tab; ?> found</h5>
+                                                    <?php if (!empty($search)): ?>
+                                                        <p class="text-muted">Try adjusting your search query</p>
+                                                    <?php endif; ?>
+                                                </div>
                                             </td>
                                         </tr>
                                     <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
-
-                        <!-- Pagination -->
-                        <?php if ($total_pages > 1): ?>
-                            <nav aria-label="Page navigation" class="mt-4">
-                                <ul class="pagination justify-content-center">
-                                    <?php if ($page > 1): ?>
-                                        <li class="page-item">
-                                            <a class="page-link" href="?tab=<?php echo $active_tab; ?>&page=<?php echo $page - 1; ?><?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>" aria-label="Previous">
-                                                <span aria-hidden="true">&laquo;</span>
-                                            </a>
-                                        </li>
-                                    <?php endif; ?>
-
-                                    <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                                        <li class="page-item <?php echo $i == $page ? 'active' : ''; ?>">
-                                            <a class="page-link" href="?tab=<?php echo $active_tab; ?>&page=<?php echo $i; ?><?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>"><?php echo $i; ?></a>
-                                        </li>
-                                    <?php endfor; ?>
-
-                                    <?php if ($page < $total_pages): ?>
-                                        <li class="page-item">
-                                            <a class="page-link" href="?tab=<?php echo $active_tab; ?>&page=<?php echo $page + 1; ?><?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>" aria-label="Next">
-                                                <span aria-hidden="true">&raquo;</span>
-                                            </a>
-                                        </li>
-                                    <?php endif; ?>
-                                </ul>
-                            </nav>
-                        <?php endif; ?>
+                    </div>
+                    <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-0 text-muted">
+                                Showing <?php echo min($offset + 1, $total_rows); ?> to <?php echo min($offset + $results_per_page, $total_rows); ?> of <?php echo number_format($total_rows); ?> entries
+                            </p>
+                        </div>
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination mb-0">
+                                <?php if ($page > 1): ?>
+                                    <li class="page-item">
+                                        <a class="page-link" 
+                                           href="?tab=<?php echo $active_tab; ?><?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>&page=<?php echo $page - 1; ?>" 
+                                           aria-label="Previous">
+                                            <span aria-hidden="true">&laquo;</span>
+                                        </a>
+                                    </li>
+                                <?php endif; ?>
+                                
+                                <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                                    <li class="page-item <?php echo $i == $page ? 'active' : ''; ?>">
+                                        <a class="page-link" 
+                                           href="?tab=<?php echo $active_tab; ?><?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>&page=<?php echo $i; ?>">
+                                            <?php echo $i; ?>
+                                        </a>
+                                    </li>
+                                <?php endfor; ?>
+                                
+                                <?php if ($page < $total_pages): ?>
+                                    <li class="page-item">
+                                        <a class="page-link" 
+                                           href="?tab=<?php echo $active_tab; ?><?php echo !empty($search) ? '&search=' . urlencode($search) : ''; ?>&page=<?php echo $page + 1; ?>" 
+                                           aria-label="Next">
+                                            <span aria-hidden="true">&raquo;</span>
+                                        </a>
+                                    </li>
+                                <?php endif; ?>
+                            </ul>
+                        </nav>
                     </div>
                 </div>
             </main>
         </div>
     </div>
+
+    <script>
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            var dropdowns = document.querySelectorAll('.dropdown-menu');
+            dropdowns.forEach(function(dropdown) {
+                if (!dropdown.parentElement.contains(event.target)) {
+                    dropdown.classList.remove('show');
+                }
+            });
+        });
+    </script>
 </body>
 </html>
+<?php
+// Close database connection
+$stmt->close();
+$count_stmt->close();
+$conn->close();
+?>

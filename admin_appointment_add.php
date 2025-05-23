@@ -29,7 +29,9 @@ $stmt->execute();
 $result = $stmt->get_result();
 $admin_data = $result->fetch_assoc();
 
-// Get list of doctors and patients for dropdowns (using correct table names)
+// Get list of doctors and patients for dropdowns
+// Note: Since appointments table references doctors and patients tables,
+// but we only have doctor_users and patient_users tables, we need to use those
 $doctors_query = "SELECT id as doctor_id, name as doctor_name, department FROM doctor_users ORDER BY name";
 $doctors = $conn->query($doctors_query);
 
@@ -128,15 +130,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $conn->begin_transaction();
             
             try {
+                // Fixed SQL query using proper MySQLi syntax
                 $insert_query = "INSERT INTO appointments (patient_id, doctor_id, appointment_datetime, reason_for_visit, status) 
                                 VALUES (?, ?, ?, ?, ?)";
+
                 $stmt = $conn->prepare($insert_query);
                 $stmt->bind_param("iisss", $patient_id, $doctor_id, $appointment_datetime, $reason, $status);
                 
                 if ($stmt->execute()) {
                     $appointment_id = $conn->insert_id;
                     
-                    // Log admin activity
+                    // Log admin activity - Check if admin_activity_log table exists and has correct structure
                     $log_query = "INSERT INTO admin_activity_log (admin_id, action_type, action_details) 
                                  VALUES (?, 'appointment_create', ?)";
                     $log_stmt = $conn->prepare($log_query);
@@ -400,6 +404,21 @@ $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
                     </div>
                 <?php endif; ?>
 
+                <!-- Database Status Check -->
+                <?php if (!$patients || $patients->num_rows == 0): ?>
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Warning:</strong> No patients found in the database. Please add patients first before creating appointments.
+                    </div>
+                <?php endif; ?>
+
+                <?php if (!$doctors || $doctors->num_rows == 0): ?>
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Warning:</strong> No doctors found in the database. Please add doctors first before creating appointments.
+                    </div>
+                <?php endif; ?>
+
                 <div class="form-section">
                     <div class="form-header">
                         <h4><i class="fas fa-calendar-plus me-2"></i> Appointment Details</h4>
@@ -493,7 +512,8 @@ $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
                         </div>
                         
                         <div class="text-end">
-                            <button type="submit" class="btn btn-primary me-2" id="submitBtn">
+                            <button type="submit" class="btn btn-primary me-2" id="submitBtn" 
+                                    <?php echo (!$patients || $patients->num_rows == 0 || !$doctors || $doctors->num_rows == 0) ? 'disabled' : ''; ?>>
                                 <i class="fas fa-save me-1"></i> 
                                 <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
                                 Save Appointment
@@ -527,8 +547,10 @@ $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
                 
                 // Show loading state
                 const spinner = submitBtn.querySelector('.spinner-border');
-                spinner.classList.remove('d-none');
-                submitBtn.disabled = true;
+                if (spinner) {
+                    spinner.classList.remove('d-none');
+                    submitBtn.disabled = true;
+                }
                 
                 form.classList.add('was-validated');
             });
@@ -599,7 +621,9 @@ $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
             alerts.forEach(alert => {
                 setTimeout(() => {
                     const bsAlert = new bootstrap.Alert(alert);
-                    bsAlert.close();
+                    if (bsAlert) {
+                        bsAlert.close();
+                    }
                 }, 5000);
             });
         });

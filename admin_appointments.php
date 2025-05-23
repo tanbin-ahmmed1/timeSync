@@ -34,8 +34,8 @@ $query = "SELECT a.appointment_id, a.appointment_datetime, a.status, a.reason_fo
           CONCAT(p.first_name, ' ', p.last_name) as patient_name, p.patient_id,
           CONCAT(d.first_name, ' ', d.last_name) as doctor_name, d.doctor_id
           FROM appointments a
-          JOIN patients p ON a.patient_id = p.patient_id
-          JOIN doctors d ON a.doctor_id = d.doctor_id";
+          JOIN patient_users p ON a.patient_id = p.id
+          JOIN doctor_users d ON a.doctor_id = d.id";
 
 // Add conditions based on filters
 $conditions = [];
