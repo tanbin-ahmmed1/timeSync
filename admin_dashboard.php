@@ -54,11 +54,11 @@ $pending_appointments = $pending_result->fetch_assoc()['pending_count'];
 
 // Get recent appointments
 $recent_appt_query = "SELECT a.appointment_id, a.appointment_datetime, a.status, 
-                     CONCAT(p.first_name, ' ', p.last_name) as patient_name, 
-                     CONCAT(d.first_name, ' ', d.last_name) as doctor_name
+                     p.name as patient_name, 
+                     d.name as doctor_name
                      FROM appointments a
-                     JOIN patients p ON a.patient_id = p.patient_id
-                     JOIN doctors d ON a.doctor_id = d.doctor_id
+                     JOIN patient_users p ON a.patient_id = p.id
+                     JOIN doctor_users d ON a.doctor_id = d.id
                      ORDER BY a.appointment_datetime DESC
                      LIMIT 5";
 $recent_appts = $conn->query($recent_appt_query);
