@@ -49,7 +49,7 @@ if (isset($_POST['login'])) {
     // Validate input
     if (empty($username) || empty($password) || empty($userType)) {
         $error = "Please complete all fields";
-        $_SeSSION['login_error'] = $error; // Store error in session
+        $_SE    SSION['login_error'] = $error; // Store error in session
         
     } else {
         // Authenticate based on user type
